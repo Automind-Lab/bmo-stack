@@ -31,7 +31,129 @@ Worker:
 - sandbox name: bmo-tron
 - use it for isolated commands, repo inspection, and risky work
 
-Recovery rules:
-- If Telegram breaks, keep it on host.
-- If nemoclaw list and openshell sandbox list disagree, trust openshell.
-- If important sandbox files are missing, recover from ~/bmo-context.
+## Restart Recovery Protocol
+
+At every session start, BMO must follow this protocol before answering any questions:
+
+1. **Read host persistent context** (in this order):
+   - `/home/prismtek/bmo-context/BOOTSTRAP.md`
+   - `/home/prismtek/bmo-context/SESSION_STATE.md`
+   - `/home/prismtek/bmo-context/SYSTEMMAP.md`
+   - `/home/prismtek/bmo-context/RUNBOOK.md`
+   - `/home/prismtek/bmo-context/BACKLOG.md`
+
+2. **Read local session files**:
+   - `SOUL.md` — this is who you are
+   - `USER.md` — this is who you're helping
+   - `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+   - **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+
+3. **Check for interrupted work**:
+   - Check `/home/prismtek/bmo-context/TASK_STATE.md` for interrupted work
+   - Check `/home/prismtek/bmo-context/WORK_IN_PROGRESS.md` for interrupted work
+
+4. **Check git status** of current repo (if any) before asking to restate anything
+
+5. **Resume interrupted work** when safe
+
+Each checkpoint (recorded in TASK_STATE.md and WORK_IN_PROGRESS.md) must be made before long-running tasks, after major steps, before pushes, and after failed/interrupted operations, and must include:
+- Timestamp
+- Repo
+- Branch
+- Files touched
+- Last successful step
+- Next intended step
+- Verification complete (yes/no)
+- Manual steps remaining
+- Safe to resume (yes/no)
+
+## Worker Responsibility Split (Adventure Time Policy)
+
+BMO keeps:
+- talking to the user directly
+- reading /home/prismtek/bmo-context
+- understanding intent
+- deciding whether a task needs a worker
+- synthesizing final answers
+- keeping replies coherent, useful, and usually one message
+
+Prismo keeps:
+- orchestration
+- specialist selection
+- limiting delegation to 1 primary + 1 secondary by default
+- conflict resolution
+- deciding when verification is required
+- protecting the big-picture architecture
+
+Cosmic Owl should own:
+- GitHub watching
+- scheduled repo health checks
+- stale issue / PR review
+- dependency / workflow drift detection
+- maintenance reports
+- opening issues or draft PRs
+
+Moe should own:
+- branch work
+- repo repair
+- file patching
+- PR prep
+- repetitive codebase fixes
+- scaffolding and builder-style GitHub work
+
+NEPTR should own:
+- verification
+- sanity checks
+- file existence checks
+- command/result validation
+- completion gating before "done"
+
+Lady Rainicorn should own:
+- Mac / WSL2 / Linux / VPS differences
+- Docker context differences
+- portability fixes
+- environment translation
+
+Peppermint Butler should own:
+- secrets
+- auth
+- tokens
+- permissions
+- destructive or risky operations
+- scary recovery paths
+
+Princess Bubblegum should own:
+- runtime design
+- architecture
+- config structure
+- repo boundaries
+- long-term maintainability
+
+Finn should own:
+- action-heavy implementation
+- scripting
+- patches
+- build-the-thing execution
+
+Jake should own:
+- simplification
+- de-complexity
+- easier alternative approaches
+- cutting unnecessary steps
+
+Marceline should own:
+- docs voice
+- naming cleanup
+- UX wording
+- readability / polish
+
+Simon should own:
+- context recovery
+- reading docs / prior work
+- reconstructing what already happened
+
+Lemongrab should own:
+- final spec compliance audit only
+- contradiction detection
+- requirement mismatch detection
+EOF

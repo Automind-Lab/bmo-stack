@@ -1,4 +1,4 @@
-.PHONY: up down status logs doctor sync-context sync-context-host-to-repo sync-context-repo-to-host worker-create worker-upload-config worker-connect worker-status openclaw-start openclaw-status recover-session worker-ready health-check doctor-plus
+.PHONY: up down status logs doctor sync-context sync-context-host-to-repo sync-context-repo-to-host worker-create worker-upload-config worker-connect worker-status openclaw-start openclaw-status recover-session worker-ready health-check doctor-plus checkpoint
 
 # Docker Compose file
 COMPOSE_FILE=compose.yaml
@@ -92,6 +92,10 @@ worker-ready: worker-create worker-upload-config
 # Session recovery
 recover-session:
 	@./scripts/recover-session.sh
+
+# Checkpoint target
+checkpoint:
+	@./scripts/checkpoint.sh $(if $(ARGS),$(ARGS))
 
 # Health check target (from PrismBot integration)
 health-check:
