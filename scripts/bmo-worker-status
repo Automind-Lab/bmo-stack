@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# bmo-worker-status: One-command worker status check
+
+set -euo pipefail
+
+HOST_CONTEXT_DIR="$HOME/bmo-context"
+TASK_STATE_FILE="$HOST_CONTEXT_DIR/TASK_STATE.md"
+WORK_IN_PROGRESS_FILE="$HOST_CONTEXT_DIR/WORK_IN_PROGRESS.md"
+
+echo "=== BMO Worker Status ==="
+
+# Check if gateway is running
+if openclaw gateway status >/dev/null 2>&1; then
+    echo "Gateway: running"
+else
+    echo "Gateway: not running"
+fi
+
+# Check agent status (current session)
+if openclaw status >/dev/null 2>&1; then
+    echo "Agent: healthy"
+else
+    echo "Agent: unhealthy"
+fi
+
+# Check latest checkpoint
+if [ -f "$TASK_STATE_FILE" ]; then
+    echo "Latest checkpoint:"
+    tail -10 "$TASK_STATE_FILE" | grep -E "^- [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} UTC" | tail -1
+else
+    echo "No task state file found"
+fi
+
+# Check work in progress
+if [ -f "$WORK_IN_PROGRESS_FILE" ]; then
+    echo "Current work in progress:"
+    tail -10 "$WORK_IN_PROGRESS_FILE" | grep -E "^- [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} UTC" | tail -1
+else
+    echo "No work in progress file found"
+fi
+
+echo "=== End Status ==="
