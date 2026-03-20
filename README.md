@@ -7,6 +7,7 @@ A portable setup for BMO / OpenClaw / worker environment.
 - **Host OpenClaw**: Handles Telegram replies (runs on the host machine).
 - **Sandbox Worker**: Optional and disposable, managed via OpenShell/NemoClaw.
 - **Canonical Context**: Lives outside disposable sandboxes in `~/bmo-context` (mounted as `./context` in the repo).
+- **NemoClaw/OpenShell**: Provides the worker sandbox framework (included as a submodule).
 
 ## Directory Structure
 
@@ -34,9 +35,11 @@ bmo-stack/
 │   ├── bmo-openclaw.service        # systemd service for OpenClaw gateway
 │   ├── bmo-storage-prune.service   # systemd service for storage pruning
 │   └── bmo-storage-prune.timer     # systemd timer for hourly pruning
-└── memory/
-    └── decisions/
-        └── README.md
+├── memory/
+│   └── decisions/
+│       └── README.md
+└── vendor/
+    └── nemoclaw/                 # NemoClaw/OpenShell submodule (worker framework)
 ```
 
 ## What Runs Where
@@ -50,6 +53,7 @@ bmo-stack/
   - Created via `openshell sandbox create --name bmo-tron`
   - Used for isolated commands, repo inspection, and risky work
   - Should not hold important context; context is synced from `~/bmo-context`
+  - Runs the NemoClaw agent framework (from the `vendor/nemoclaw` submodule)
 
 ## Getting Started
 
@@ -124,6 +128,7 @@ The `context/` directory in this repo is a copy of your `~/bmo-context`.
 - Secrets (like API keys) should be placed in `.env` (not committed) or in your host's OpenClaw config.
 - The `compose.yaml` currently runs a placeholder container for the worker environment. It does not run the Telegram bot (that runs on the host).
 - The sandbox worker is managed by OpenShell on the host, not by Docker Compose. The compose file is for any auxiliary services you might want to add (e.g., a database).
+- The `vendor/nemoclaw` directory contains the NemoClaw/OpenShell submodule, which provides the worker sandbox framework. Do not modify this directory directly unless you intend to contribute back to the nemoclaw project.
 
 ## Top 5 Follow-up Improvements
 
