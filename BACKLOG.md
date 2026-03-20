@@ -16,6 +16,6 @@ Important:
 10. Reduce reply fragmentation.
 
 Nice-to-have:
-11. Easier worker auth for openclaw tui.
-12. Add a project-state snapshot generator.
+11. Easier worker auth for openclaw tui. [DONE]
+12. Add a project-state snapshot generator. [DONE]
 13. Preserve important docs in a real repo later.

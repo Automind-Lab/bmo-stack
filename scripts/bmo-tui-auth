@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# bmo-tui-auth: Easier worker auth for openclaw tui
+
+set -euo pipefail
+
+# Default values
+SESSION_KEY="main"
+HISTORY_LIMIT=200
+DELIVER=false
+
+# Show help
+show_help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo
+    echo "Options:"
+    echo "  --session <key>     Session key (default: main)"
+    echo "  --history <n>       History entries to load (default: 200)"
+    echo "  --deliver           Deliver assistant replies"
+    echo "  --message <text>    Send initial message after connecting"
+    echo "  --token <token>     Gateway token (if required)"
+    echo "  --url <url>         Gateway WebSocket URL"
+    echo "  --help              Show this help"
+    echo
+    echo "Examples:"
+    echo "  $0 --session worker1 --history 100"
+    echo "  $0 --deliver --message \"Hello from TUI\""
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --session)
+            SESSION_KEY="$2"
+            shift 2
+            ;;
+        --history)
+            HISTORY_LIMIT="$2"
+            shift 2
+            ;;
+        --deliver)
+            DELIVER=true
+            shift
+            ;;
+        --message)
+            INITIAL_MESSAGE="$2"
+            shift 2
+            ;;
+        --token)
+            GATEWAY_TOKEN="$2"
+            shift 2
+            ;;
+        --url)
+            GATEWAY_URL="$2"
+            shift 2
+            ;;
+        --help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Build command
+CMD="openclaw tui --session \"$SESSION_KEY\" --history-limit \"$HISTORY_LIMIT\""
+
+if [ "$DELIVER" = true ]; then
+    CMD="$CMD --deliver"
+fi
+
+if [ -n "${INITIAL_MESSAGE:-}" ]; then
+    CMD="$CMD --message \"$INITIAL_MESSAGE\""
+fi
+
+if [ -n "${GATEWAY_TOKEN:-}" ]; then
+    CMD="$CMD --token \"$GATEWAY_TOKEN\""
+fi
+
+if [ -n "${GATEWAY_URL:-}" ]; then
+    CMD="$CMD --url \"$GATEWAY_URL\""
+fi
+
+# Execute
+echo "Launching: $CMD"
+exec $CMD
