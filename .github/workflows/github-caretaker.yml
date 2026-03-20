@@ -1,102 +1,54 @@
-name: Cosmic Owl - GitHub Caretaker
+name: Cosmic Owl GitHub Caretaker
 
 on:
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 02:00 UTC
   workflow_dispatch:
+  schedule:
+    - cron: '17 13 * * *'
 
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 jobs:
-  caretaker:
+  repo-health:
     runs-on: ubuntu-latest
+    env:
+      OPEN_ISSUES_THRESHOLD: '10'
+      STALE_DAYS: '30'
+      REPORT_PATH: maintenance-report.md
     steps:
-      - name: Checkout repository (optional for API calls, but we do it for context)
+      - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: gh --version
+
+      - name: Generate maintenance report
+        id: report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/github-maintenance-report.sh
+          scripts/github-maintenance-report.sh
+
+      - name: Upload maintenance report artifact
+        uses: actions/upload-artifact@v4
         with:
-          # We don't need to fetch the entire history for this check
-          fetch-depth: 0
+          name: cosmic-owl-maintenance-report
+          path: maintenance-report.md
 
-      - name: Get repo info and decide if issue needed
-        id: repo-check
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const thresholdOpenIssues = 10;
-            const thresholdOpenPRs = 5;
-            const daysSinceLastCommitThreshold = 14;
-
-            // Get open issues
-            const issuesResponse = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
-            });
-            const openIssuesCount = issuesResponse.data.length;
-
-            // Get open pull requests
-            const prsResponse = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
-            });
-            const openPRsCount = prsResponse.data.length;
-
-            // Get last commit date
-            const commitsResponse = await github.rest.repos.listCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 1
-            });
-            const lastCommitDate = new Date(commitsResponse.data[0].commit.author.date);
-            const today = new Date();
-            const daysSinceLastCommit = Math.floor((today - lastCommitDate) / (1000 * 60 * 60 * 24));
-
-            let shouldOpenIssue = false;
-            let report = `## Cosmic Owl Maintenance Report\n\n`;
-            report += `**Date**: ${today.toISOString().split('T')[0]}\n\n`;
-            report += `### Metrics\n\n`;
-            report += `- Open Issues: ${openIssuesCount} (threshold: >${thresholdOpenIssues})\n`;
-            report += `- Open Pull Requests: ${openPRsCount} (threshold: >${thresholdOpenPRs})\n`;
-            report += `- Days Since Last Commit: ${daysSinceLastCommit} (threshold: >${daysSinceLastCommitThreshold} days)\n\n`;
-
-            if (openIssuesCount > thresholdOpenIssues) {
-              shouldOpenIssue = true;
-              report += `- ⚠️ High number of open issues\n`;
-            }
-            if (openPRsCount > thresholdOpenPRs) {
-              shouldOpenIssue = true;
-              report += `- ⚠️ High number of open pull requests\n`;
-            }
-            if (daysSinceLastCommit > daysSinceLastCommitThreshold) {
-              shouldOpenIssue = true;
-              report += `- ⚠️ No recent commits for ${daysSinceLastCommit} days\n`;
-            }
-
-            if (!shouldOpenIssue) {
-              report += `✅ All metrics are within acceptable thresholds.\n`;
-            }
-
-            // Set output for debugging
-            console.log(`Should open issue: ${shouldOpenIssue}`);
-            console.log(report);
-
-            // If we should open an issue, create it
-            if (shouldOpenIssue) {
-              const issueTitle = `Cosmic Owl Maintenance Report: ${today.toISOString().split('T')[0]}`;
-              // Check if there's already an open issue with this title today? We'll skip for simplicity and allow duplicates.
-              // In a more advanced version, we could check for existing issues with the same title and close duplicates.
-              const newIssue = await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: issueTitle,
-                body: report
-              });
-              console.log(`Created issue: ${newIssue.data.html_url}`);
-            } else {
-              console.log('No issue opened as metrics are within thresholds.');
-            }
+      - name: Open maintenance issue when attention is needed
+        if: steps.report.outputs.needs_attention == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="Cosmic Owl maintenance report: action needed"
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq 'length' | grep -q '^0$'; then
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$title" \
+              --body-file maintenance-report.md
+          else
+            echo "Open maintenance issue already exists; skipping issue creation."
+          fi
