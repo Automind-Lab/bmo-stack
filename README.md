@@ -15,7 +15,7 @@ A portable setup for BMO / OpenClaw / worker environment.
 bmo-stack/
 ├── compose.yaml          # Docker Compose file (for OPTIONAL auxiliary services)
 ├── .env.example          # Example environment variables
-├── Makefile              # Simple commands: make up, down, status, logs, doctor, sync-context*
+├── Makefile              # Simple commands: make up, down, status, logs, doctor, sync-context*, worker-*, openclaw-*
 ├── README.md             # This file
 ├── scripts/
 │   ├── bootstrap-mac.sh  # macOS bootstrap
@@ -50,7 +50,7 @@ bmo-stack/
   - Your personal data and configuration (e.g., `~/.openclaw`)
 
 - **Worker Sandbox (optional, disposable)**:
-  - Created via `openshell sandbox create --name bmo-tron`
+  - Created via `make worker-create` (or `openshell sandbox create --name bmo-tron`)
   - Used for isolated commands, repo inspection, and risky work
   - Should not hold important context; context is synced from `~/bmo-context`
   - Runs the NemoClaw agent framework (from the `vendor/nemoclaw` submodule)
@@ -81,19 +81,20 @@ The script will:
 After bootstrapping:
 
 1. Edit `.env` to add your NVIDIA API key (and any other required keys).
-2. Ensure OpenClaw is running on your host machine.
+2. Ensure OpenClaw is running on your host machine (or use `make openclaw-start`).
 3. Use `make up` to start any auxiliary services (currently just a placeholder container).
-4. Manage the worker sandbox via OpenShell on the host:
+4. Manage the worker sandbox via make targets:
    ```bash
    # Create a worker sandbox (if not already created)
-   openshell sandbox create --name bmo-tron
+   make worker-create
 
    # Upload your OpenClaw config to the sandbox (so it can communicate with the gateway)
-   openshell sandbox upload bmo-tron ~/.openclaw/openclaw.json .openclaw/openclaw.json
+   make worker-upload-config
 
    # Now you can use the sandbox for isolated work
-   openshell sandbox connect bmo-tron
+   make worker-connect
    ```
+   Or run the individual OpenShell commands directly.
 
 ### Context Synchronization
 
@@ -115,6 +116,12 @@ Or run the script directly: `./scripts/sync-context.sh [--host-to-repo|--repo-to
 - `make sync-context-host-to-repo` - Sync host context to repo
 - `make sync-context-repo-to-host` - Sync repo context to host
 - `make doctor` - Check system prerequisites and context
+- `make worker-create` - Create the bmo-tron sandbox if it doesn't exist
+- `make worker-upload-config` - Upload OpenClaw config to the sandbox
+- `make worker-connect` - Attach to the sandbox shell
+- `make worker-status` - Check if the sandbox exists
+- `make openclaw-start` - Start the OpenClaw gateway on the host
+- `make openclaw-status` - Check OpenClaw gateway status
 
 ### Keeping Context Synced
 
@@ -126,14 +133,22 @@ The `context/` directory in this repo is a copy of your `~/bmo-context`.
 ## Important Notes
 
 - Secrets (like API keys) should be placed in `.env` (not committed) or in your host's OpenClaw config.
-- The `compose.yaml` currently runs a placeholder container for the worker environment. It does not run the Telegram bot (that runs on the host).
-- The sandbox worker is managed by OpenShell on the host, not by Docker Compose. The compose file is for any auxiliary services you might want to add (e.g., a database).
+- The `compose.yaml` currently defines an optional Redis service (commented out). It does not run the Telegram bot (that runs on the host) or the worker sandbox (managed by OpenShell).
+- The sandbox worker is managed by OpenShell on the host, not by Docker Compose. The compose file is for any auxiliary services you might want to add (e.g., a database, Redis cache).
 - The `vendor/nemoclaw` directory contains the NemoClaw/OpenShell submodule, which provides the worker sandbox framework. Do not modify this directory directly unless you intend to contribute back to the nemoclaw project.
 
-## Top 5 Follow-up Improvements
+## What Is Still Manual
 
-1. Add a service for a database (e.g., Postgres) to `compose.yaml` for persistent worker data.
-2. Create a script to automatically sync context between `~/bmo-context` and `./context` (already done: `scripts/sync-context.sh`).
-3. Add a `make sync-context` command to facilitate context synchronization (already done).
-4. Improve the bootstrap scripts to optionally install OpenClaw and Docker if missing.
-5. Add health checks to the `compose.yaml` services and integrate with `make doctor`.
+Despite the automation added via Makefile targets, the following steps remain manual (requiring user action or external setup):
+
+1. **Install prerequisites**: You must install Docker Engine + Compose v2 and OpenClaw on your host machine before running the bootstrap scripts.
+2. **Edit `.env`**: Set `NVIDIA_API_KEY` (required for the AI model). No default is provided for security reasons.
+3. **Start OpenClaw gateway**: Although we provide `make openclaw-start`, you must run it at least once (or configure it to start on boot) to handle Telegram.
+4. **Decide on auxiliary services**: If you want to run auxiliary services (e.g., Redis, Postgres), you must:
+   - Uncomment and configure the desired service in `compose.yaml`.
+   - Add any required environment variables to `.env` (if needed for that service).
+   - Run `make up` to start the services.
+5. **Initial context**: The repo includes a copy of your `~/bmo-context` at the time of bootstrap. You must keep it in sync using the `make sync-context*` targets whenever you make changes in either location.
+6. **Worker sandbox lifecycle**: While we provide `make worker-create`, `worker-upload-config`, and `worker-connect`, you must run these commands (or the equivalent OpenShell commands) to set up and access the sandbox. The sandbox is not started automatically; you connect to it on demand.
+
+All other aspects (identity system, local‑first config, service templates, memory structure, shared bootstrap logic, nemoclaw submodule inclusion) are automated and ready to use. The repository is hardened and documented for immediate use across macOS, WSL2, and Linux hosts.  

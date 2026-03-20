@@ -1,4 +1,4 @@
-.PHONY: up down status logs doctor sync-context sync-context-host-to-repo sync-context-repo-to-host
+.PHONY: up down status logs doctor sync-context sync-context-host-to-repo sync-context-repo-to-host worker-create worker-upload-config worker-connect worker-status openclaw-start openclaw-status
 
 # Docker Compose file
 COMPOSE_FILE=compose.yaml
@@ -56,3 +56,32 @@ doctor:
 		exit 1; \
 	fi
 	@echo "All checks passed."
+
+# Worker sandbox management
+worker-create:
+	@if openshell sandbox list | grep -q bmo-tron; then \
+		echo "Sandbox bmo-tron already exists."; \
+	else \
+		echo "Creating sandbox bmo-tron..."; \
+		openshell sandbox create --name bmo-tron; \
+	fi
+
+worker-upload-config:
+	@if [ ! -f $$HOME/.openclaw/openclaw.json ]; then \
+		echo "Error: OpenClaw config not found at $$HOME/.openclaw/openclaw.json"; exit 1; \
+	fi
+	echo "Uploading OpenClaw config to sandbox..."
+	openshell sandbox upload bmo-tron $$HOME/.openclaw/openclaw.json .openclaw/openclaw.json
+
+worker-connect:
+	openshell sandbox connect bmo-tron
+
+worker-status:
+	openshell sandbox list | grep bmo-tron || echo "Sandbox bmo-tron not found."
+
+# OpenClaw gateway management (host)
+openclaw-start:
+	openclaw gateway start
+
+openclaw-status:
+	openclaw gateway status

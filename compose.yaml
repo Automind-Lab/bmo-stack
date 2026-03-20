@@ -1,28 +1,24 @@
 version: '3.8'
 
-# NOTE: This docker-compose file is for OPTIONAL auxiliary services.
+# This docker-compose file defines OPTIONAL auxiliary services for the BMO Stack.
 # The core BMO Stack does NOT require Docker:
 #   - Host OpenClaw handles Telegram (runs on host)
 #   - Worker sandbox (bmo-tron) is managed by OpenShell/NemoClaw on host
 #   - Context lives in ~/bmo-context (outside containers)
 #
 # If you want to run auxiliary services (e.g., a database for the worker),
-# you can use this compose file. Otherwise, you may ignore it.
-
+# uncomment and configure the services below. Then use `make up`/`make down`.
+#
+# Example: Redis cache (useful for worker sandbox)
 services:
-  # Example auxiliary service: PostgreSQL database
-  # Uncomment and configure as needed.
-  #
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: bmo_postgres
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: bmo_redis
   #   restart: unless-stopped
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
   #   ports:
-  #     - "5432:5432"
+  #     - "6379:6379"
+  #   volumes:
+  #     - redisdata:/data
 
 volumes:
-  pgdata:
+  redisdata:
