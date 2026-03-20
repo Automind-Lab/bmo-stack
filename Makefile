@@ -1,4 +1,4 @@
-.PHONY: up down status logs doctor sync-context sync-context-host-to-repo sync-context-repo-to-host worker-create worker-upload-config worker-connect worker-status openclaw-start openclaw-status
+.PHONY: up down status logs doctor sync-context sync-context-host-to-repo sync-context-repo-to-host worker-create worker-upload-config worker-connect worker-status worker-ready openclaw-start openclaw-status
 
 # Docker Compose file
 COMPOSE_FILE=compose.yaml
@@ -78,6 +78,10 @@ worker-connect:
 
 worker-status:
 	openshell sandbox list | grep bmo-tron || echo "Sandbox bmo-tron not found."
+
+# New target: worker-ready creates the sandbox and uploads config in one go
+worker-ready: worker-create worker-upload-config
+	@echo "Worker sandbox bmo-tron is ready for use."
 
 # OpenClaw gateway management (host)
 openclaw-start:
