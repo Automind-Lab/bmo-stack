@@ -1,0 +1,7 @@
+[Unit]
+Description=BMO Storage Prune (cleanup old files)
+Documentation=man:openclaw(1)
+
+[Service]
+Type=oneshot
+ExecStart=/home/prismtek/.local/bin/openclaw storage prune --config %h/.config/bmo-storage.env
